@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNS Plastics Order System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Select2 (for searchable dropdown) CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 id="header-title">New Order</h1>
+            <button id="btn-restart" class="btn-icon" style="display:none;" title="Start New Session">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            </button>
+        </header>
+
+        <!-- SCREEN: HOME -->
+        <section id="screen-home" class="screen active">
+            
+            <!-- Customer Form -->
+            <div id="customer-form" class="card">
+                <h2 class="section-title">Customer Details</h2>
+                <div class="input-group">
+                    <label>Customer Name *</label>
+                    <input type="text" id="cust-name" placeholder="Enter name">
+                </div>
+                <div class="input-group">
+                    <label>Company Name (Optional)</label>
+                    <input type="text" id="cust-company" placeholder="Enter company">
+                </div>
+                <div class="input-group">
+                    <label>Mobile Number (Optional)</label>
+                    <input type="tel" id="cust-mobile" placeholder="Enter mobile">
+                </div>
+                <button id="btn-start-order" class="btn btn-primary btn-large">Start Order</button>
+            </div>
+
+            <!-- Order Items Form (Hidden until session started) -->
+            <div id="order-entry-form" class="hidden">
+                <div class="card session-info">
+                    <p><strong>Order #:</strong> <span id="display-order-num"></span></p>
+                    <p><strong>Customer:</strong> <span id="display-cust-name"></span></p>
+                    <p><strong>Date:</strong> <span id="display-date"></span></p>
+                </div>
+                
+                <div class="card add-item-section">
+                    <h2 class="section-title">Add Product</h2>
+                    <div class="input-group">
+                        <label>Product *</label>
+                        <select id="product-select" class="searchable-select" style="width:100%;">
+                            <option value="">Select a product...</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="input-group half">
+                            <label>Quantity *</label>
+                            <input type="number" id="item-qty" placeholder="0" min="0" step="0.1">
+                        </div>
+                        <div class="input-group half">
+                            <label>Unit *</label>
+                            <select id="item-unit">
+                                <option value="Pieces">Pieces</option>
+                                <option value="Dozen">Dozen</option>
+                                <option value="Bundle">Bundle</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="btn-add-item" class="btn btn-secondary">Add to Order</button>
+                </div>
+
+                <!-- Added Items List -->
+                <div id="added-items-list" class="items-list">
+                    <!-- Dynamic Items Go Here -->
+                </div>
+
+                <div class="bottom-action">
+                    <button id="btn-proceed-adjustment" class="btn btn-primary btn-large" disabled>Proceed to Adjustment</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN: ADJUSTMENT -->
+        <section id="screen-adjustment" class="screen">
+            <div class="info-banner">
+                Adjust quantities based on available stock.
+            </div>
+            
+            <div id="adjustment-list" class="items-list">
+                <!-- Dynamic Items Go Here -->
+            </div>
+
+            <div class="bottom-action">
+                <button id="btn-proceed-summary" class="btn btn-primary btn-large">View Summary & Export</button>
+            </div>
+        </section>
+
+        <!-- SCREEN: SUMMARY -->
+        <section id="screen-summary" class="screen">
+            <!-- Capture Area -->
+            <div id="export-area" class="export-area">
+                <div class="receipt-header">
+                    <h2>SNS PLASTICS</h2>
+                    <p class="subtitle">FINAL ADJUSTED ORDER SHEET</p>
+                </div>
+                <div class="receipt-info">
+                    <p><strong>Customer:</strong> <span id="summary-cust-name"></span></p>
+                    <p><strong>Order No:</strong> <span id="summary-order-num"></span></p>
+                    <p><strong>Date:</strong> <span id="summary-date"></span></p>
+                </div>
+                
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Ordered</th>
+                            <th>Final</th>
+                            <th>Diff</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+                
+                <div class="receipt-footer">
+                    <p><strong>Total Items:</strong> <span id="summary-total-items">0</span></p>
+                    <div class="signatures">
+                        <p>Prepared By: ________________</p>
+                        <p>Signature: ________________</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-actions">
+                <button id="btn-share-pdf" class="btn btn-primary"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Share PDF</button>
+                
+                <button id="btn-share-img" class="btn btn-secondary"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Share Image</button>
+                
+                <button id="btn-save-pdf" class="btn btn-outline">Download PDF</button>
+                <button id="btn-save-img" class="btn btn-outline">Download Image</button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Scripts -->
+    <!-- jQuery required for Select2 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+</html>
