@@ -47,6 +47,15 @@
                 <button id="btn-start-order" class="btn btn-primary btn-large">Start Order</button>
             </div>
 
+            <!-- Recent Invoices History -->
+            <div id="recent-invoices-card" class="card history-card">
+                <h2 class="section-title">Recent Invoices (Last 5)</h2>
+                <div id="recent-invoices-list" class="history-list">
+                    <!-- Dynamic Recent Invoices Go Here -->
+                </div>
+            </div>
+
+
             <!-- Order Items Form (Hidden until session started) -->
             <div id="order-entry-form" class="hidden">
                 <div class="card session-info">
@@ -86,7 +95,13 @@
                 </div>
 
                 <div class="bottom-action">
-                    <button id="btn-proceed-adjustment" class="btn btn-primary btn-large" disabled>Proceed to Adjustment</button>
+                    <div class="action-row">
+                        <button id="btn-save-draft" class="btn btn-save" disabled>
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                            Save Draft
+                        </button>
+                        <button id="btn-proceed-adjustment" class="btn btn-primary btn-large" disabled>Proceed to Adjustment</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -102,7 +117,13 @@
             </div>
 
             <div class="bottom-action">
-                <button id="btn-proceed-summary" class="btn btn-primary btn-large">View Summary & Export</button>
+                <div class="action-row">
+                    <button id="btn-save-adj" class="btn btn-save">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Save
+                    </button>
+                    <button id="btn-proceed-summary" class="btn btn-primary btn-large">View Summary &amp; Export</button>
+                </div>
             </div>
         </section>
 
@@ -153,6 +174,12 @@
             </div>
         </section>
 
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="save-toast" class="save-toast" aria-live="polite">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span id="save-toast-msg">Draft saved!</span>
     </div>
 
     <!-- Scripts -->
