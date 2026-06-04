@@ -157,11 +157,12 @@ $(document).ready(function () {
     // Render the initial recent invoices list
     renderRecentInvoices();
 
-    // Initialize Select2
+    // Initialize Select2 — dropdownParent fixes touch/scroll on mobile
     $('#product-select').select2({
         data: predefinedProducts.map(p => ({ id: p, text: p })),
         placeholder: "Search for a product...",
-        allowClear: true
+        allowClear: true,
+        dropdownParent: $('#order-entry-form')
     });
 
     // Start Order
@@ -258,65 +259,87 @@ $(document).ready(function () {
 
     // Export PDF
     $('#btn-save-pdf, #btn-share-pdf').click(async function () {
+        // Capture button id BEFORE async — 'this' is lost inside .then() on some mobile browsers
+        const buttonId = this.id;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'pt', 'a4');
-
         const exportArea = document.getElementById('export-area');
 
-        await html2canvas(exportArea, { scale: 2 }).then(canvas => {
+        try {
+            const canvas = await html2canvas(exportArea, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                logging: false
+            });
             const imgData = canvas.toDataURL('image/png');
             const pdfWidth = doc.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
             doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
             const fileName = `SNS_Order_${session.orderNum}.pdf`;
 
-            if (this.id === 'btn-share-pdf' && navigator.share && navigator.canShare) {
-                // To share PDF via Web Share API, we need a File object
+            if (buttonId === 'btn-share-pdf' && navigator.share) {
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-                if (navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        files: [file],
-                        title: 'Order Summary',
-                        text: 'Here is the final adjusted order sheet.'
-                    }).catch(console.error);
-                    return;
+                const canShare = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
+                if (canShare) {
+                    try {
+                        await navigator.share({ files: [file], title: 'Order Summary', text: 'Final adjusted order sheet.' });
+                        return;
+                    } catch (shareErr) {
+                        console.warn('Share failed, falling back to download', shareErr);
+                    }
                 }
             }
-
             doc.save(fileName);
-        });
+        } catch (err) {
+            console.error('PDF export error:', err);
+            alert('Could not generate PDF. Please try again.');
+        }
     });
 
     // Export Image
     $('#btn-save-img, #btn-share-img').click(async function () {
+        const buttonId = this.id;
         const exportArea = document.getElementById('export-area');
-        await html2canvas(exportArea, { scale: 2 }).then(canvas => {
+
+        try {
+            const canvas = await html2canvas(exportArea, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                logging: false
+            });
             const fileName = `SNS_Order_${session.orderNum}.png`;
 
-            canvas.toBlob(blob => {
-                if (this.id === 'btn-share-img' && navigator.share && navigator.canShare) {
+            if (buttonId === 'btn-share-img' && navigator.share) {
+                canvas.toBlob(async (blob) => {
                     const file = new File([blob], fileName, { type: 'image/png' });
-                    if (navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: 'Order Summary',
-                            text: 'Here is the final adjusted order sheet.'
-                        }).catch(console.error);
-                        return;
+                    const canShare = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
+                    if (canShare) {
+                        try {
+                            await navigator.share({ files: [file], title: 'Order Summary', text: 'Final adjusted order sheet.' });
+                            return;
+                        } catch (shareErr) {
+                            console.warn('Share failed, falling back to download', shareErr);
+                        }
                     }
-                }
-
-                // Save to downloads fallback
+                    // fallback download
+                    const link = document.createElement('a');
+                    link.download = fileName;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            } else {
                 const link = document.createElement('a');
                 link.download = fileName;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-            });
-        });
+            }
+        } catch (err) {
+            console.error('Image export error:', err);
+            alert('Could not generate image. Please try again.');
+        }
     });
 });
 
@@ -399,18 +422,51 @@ function renderSummary() {
     $('#summary-date').text(session.date);
 
     const tbody = $('#summary-table-body');
+    const thead = $('#summary-table-head');
     tbody.empty();
+
+    // Only show Final & Diff columns when at least one item was actually adjusted
+    const hasAdjustments = session.items.some(item => item.finalQty !== item.originalQty);
+
+    if (hasAdjustments) {
+        thead.html('<tr><th>Product</th><th>Ordered</th><th>Final</th><th>Diff</th></tr>');
+    } else {
+        thead.html('<tr><th>Product</th><th>Quantity</th></tr>');
+    }
 
     session.items.forEach(item => {
         const diff = item.finalQty - item.originalQty;
-        tbody.append(`
-            <tr>
-                <td>${item.product}</td>
-                <td>${item.originalQty} ${item.originalUnit}</td>
-                <td>${item.finalQty} ${item.finalUnit}</td>
-                <td style="color:${diff < 0 ? 'red' : 'inherit'}; font-weight:bold;">${diff > 0 ? '+' : ''}${diff}</td>
-            </tr>
-        `);
+        const isAdjusted = diff !== 0;
+
+        if (!hasAdjustments) {
+            // Simple 2-column row — no adjustments anywhere
+            tbody.append(`
+                <tr>
+                    <td>${item.product}</td>
+                    <td>${item.originalQty} ${item.originalUnit}</td>
+                </tr>
+            `);
+        } else if (isAdjusted) {
+            // This item was changed — show all 4 columns with coloured diff
+            const diffColor = diff < 0 ? 'var(--color-red)' : 'var(--color-green)';
+            tbody.append(`
+                <tr>
+                    <td>${item.product}</td>
+                    <td>${item.originalQty} ${item.originalUnit}</td>
+                    <td><strong>${item.finalQty} ${item.finalUnit}</strong></td>
+                    <td style="color:${diffColor}; font-weight:bold;">${diff > 0 ? '+' : ''}${diff}</td>
+                </tr>
+            `);
+        } else {
+            // This item was NOT changed but others were — merge Final+Diff into a ✓ cell
+            tbody.append(`
+                <tr>
+                    <td>${item.product}</td>
+                    <td>${item.originalQty} ${item.originalUnit}</td>
+                    <td colspan="2" style="text-align:center; color:var(--color-green); font-weight:600;">&#10003; Met</td>
+                </tr>
+            `);
+        }
     });
 
     $('#summary-total-items').text(session.items.length);
